@@ -31,6 +31,10 @@ git push origin main
    - **Plan**: **Free**
 4. Clique **"Create Database"**
 5. **⚠️ ANOTE a URL de conexão** que aparecerá!
+5.1 password = Yo3WW2adNhB8r9o4op22DAM3PGFI8W2O
+5.2 Internal Database URL = postgresql://ligafacil_user:Yo3WW2adNhB8r9o4op22DAM3PGFI8W2O@dpg-d3ckacili9vc73dl54j0-a/ligafacil
+5.3 External Database URL =  postgresql://ligafacil_user:Yo3WW2adNhB8r9o4op22DAM3PGFI8W2O@dpg-d3ckacili9vc73dl54j0-a.oregon-postgres.render.com/ligafacil
+5.4 PSQL Command = PGPASSWORD=Yo3WW2adNhB8r9o4op22DAM3PGFI8W2O psql -h dpg-d3ckacili9vc73dl54j0-a.oregon-postgres.render.com -U ligafacil_user ligafacil
 
 ### 3. **Deploy do Backend**
 
@@ -50,7 +54,7 @@ Adicione no **Environment**:
 
 ```env
 DATABASE_URL=sua_url_do_postgresql_aqui
-JWT_SECRET=sua_chave_jwt_super_segura_aqui_mude_agora
+JWT_SECRET=025eb20cbb4bf91cf6671e5b4eed102f
 NODE_ENV=production
 PORT=10000
 ```

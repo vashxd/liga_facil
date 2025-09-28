@@ -1,0 +1,54 @@
+5. Diagrama de Componentes (Descrição Detalhada)
+Arquitetura em 3 Camadas:
+Camada de Apresentação:
+
+Interface Web (React/Vue.js): Aplicação web responsiva para desktop e tablets
+Mobile App (React Native): Aplicação móvel para iOS e Android
+Painel Admin: Dashboard administrativo para gestão geral do sistema
+API Gateway: Ponto único de entrada para todas as requisições (REST/GraphQL)
+
+Camada de Negócio:
+
+Componente de Gestão de Usuários:
+
+Autenticação (JWT)
+Autorização (RBAC)
+Gestão de perfis e preferências
+
+
+Componente de Gestão de Times:
+
+CRUD completo de times
+Gestão de jogadores
+Definição de escalações e posições
+
+
+Componente de Gestão de Campeonatos:
+
+Implementação dos 20 formatos diferentes
+Motor de sorteio inteligente
+Geração automática de calendário
+
+
+Componente de Gestão de Partidas:
+
+Registro de resultados em tempo real
+Cálculo automático de estatísticas
+Atualização de classificações
+
+
+Sistema de Notificações:
+
+Notificações por email (SendGrid)
+Push notifications (Firebase)
+Notificações in-app
+
+
+
+Camada de Dados:
+
+PostgreSQL: Banco principal para dados transacionais
+Redis: Cache e sessões
+MongoDB: Logs e estatísticas históricas
+S3/Storage: Armazenamento de imagens (escudos, fotos)
+ORM/ODM: Camada de abstração de dados (Prisma/Sequelize)

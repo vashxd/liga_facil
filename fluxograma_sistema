@@ -1,0 +1,40 @@
+[INÍCIO]
+    ↓
+[Usuário Acessa Sistema]
+    ↓
+[Tem Conta?] 
+    ├─ Não → [Criar Conta] → [Validar Email]
+    └─ Sim → [Login]
+            ↓
+        [Dashboard Principal]
+            ↓
+        [Escolher Ação]
+            ├─ [Criar Time]
+            │     ↓
+            │   [Adicionar Jogadores]
+            │     ↓
+            │   [Definir Posições]
+            │
+            ├─ [Criar Campeonato]
+            │     ↓
+            │   [Escolher Formato]
+            │     ↓
+            │   [Configurar Regras]
+            │     ↓
+            │   [Abrir Inscrições]
+            │
+            └─ [Participar de Campeonato]
+                  ↓
+                [Público ou Privado?]
+                  ├─ Público → [Buscar Campeonatos]
+                  └─ Privado → [Inserir Código]
+                        ↓
+                    [Inscrever Time]
+                        ↓
+                    [Aguardar Sorteio]
+                        ↓
+                    [Receber Calendário]
+                        ↓
+                    [Jogar Partidas]
+                        ↓
+                    [Ver Resultados]

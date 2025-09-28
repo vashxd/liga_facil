@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enum para status da partida
+enum StatusPartida {
+  AGENDADA
+  EM_ANDAMENTO
+  FINALIZADA
+  ADIADA
+  CANCELADA
+}
+
+// Enum para tipos de notificação
+enum TipoNotificacao {
+  CONVITE
+  LEMBRETE_PARTIDA
+  RESULTADO
+  ALTERACAO_DATA
+  INSCRICAO_ACEITA
+  NOVA_FASE
+}
+
+// Enum para formato do campeonato
+enum FormatoCampeonato {
+  ELIMINACAO_SIMPLES
+  ELIMINACAO_DUPLA
+  GRUPOS_ELIMINACAO
+  PONTOS_CORRIDOS
+  SUICO
+  ROUND_ROBIN
+  MATA_MATA_GRUPOS
+  PLAYOFF
+  LIGA_ASCENSO
+  TORNEIO_DUPLO
+  CLASSIFICATORIO
+  COPA_LIGA
+  CHAMPIONS
+  MUNDIAL
+  REGIONAL
+  ESTADUAL
+  MUNICIPAL
+  AMISTOSO
+  FESTIVAL
+  EXHIBITION
+}
+
+// Modelo Usuario
+model Usuario {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String   @unique
+  senha        String
+  dataCadastro DateTime @default(now())
+
+  // Relacionamentos
+  timesOrganizados Time[]
+  campeonatosOrganizados Campeonato[]
+  notificacoes Notificacao[]
+
+  @@map("usuarios")
+}
+
+// Modelo Time
+model Time {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  escudo      String?
+  dataCriacao DateTime @default(now())
+
+  // Relacionamentos
+  criadorId   Int
+  criador     Usuario @relation(fields: [criadorId], references: [id])
+  jogadores   Jogador[]
+  inscricoes  Inscricao[]
+  partidasCasa Partida[] @relation("TimeCasa")
+  partidasVisitante Partida[] @relation("TimeVisitante")
+  classificacoes Classificacao[]
+  escalacoes  Escalacao[]
+
+  @@map("times")
+}
+
+// Modelo Jogador
+model Jogador {
+  id      Int    @id @default(autoincrement())
+  nome    String
+  posicao String
+  numero  Int
+
+  // Relacionamentos
+  timeId  Int
+  time    Time @relation(fields: [timeId], references: [id])
+  estatisticas Estatistica[]
+  escalacoes   Escalacao[]
+
+  @@unique([timeId, numero]) // Número único por time
+  @@map("jogadores")
+}
+
+// Modelo Campeonato
+model Campeonato {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  formato     FormatoCampeonato
+  dataInicio  DateTime
+  privado     Boolean  @default(false)
+  codigo      String?  @unique // Código para campeonatos privados
+
+  // Relacionamentos
+  organizadorId Int
+  organizador   Usuario @relation(fields: [organizadorId], references: [id])
+  inscricoes    Inscricao[]
+  partidas      Partida[]
+  classificacoes Classificacao[]
+
+  @@map("campeonatos")
+}
+
+// Modelo Partida
+model Partida {
+  id        Int      @id @default(autoincrement())
+  dataHora  DateTime
+  local     String
+  fase      String
+  status    StatusPartida @default(AGENDADA)
+
+  // Relacionamentos
+  campeonatoId Int
+  campeonato   Campeonato @relation(fields: [campeonatoId], references: [id])
+
+  timeCasaId     Int
+  timeCasa       Time @relation("TimeCasa", fields: [timeCasaId], references: [id])
+
+  timeVisitanteId Int
+  timeVisitante   Time @relation("TimeVisitante", fields: [timeVisitanteId], references: [id])
+
+  resultado    Resultado?
+  estatisticas Estatistica[]
+  escalacoes   Escalacao[]
+
+  @@map("partidas")
+}
+
+// Modelo Resultado
+model Resultado {
+  id               Int @id @default(autoincrement())
+  golsCasa         Int @default(0)
+  golsVisitante    Int @default(0)
+  penaltisCasa     Int @default(0)
+  penaltisVisitante Int @default(0)
+
+  // Relacionamentos
+  partidaId Int     @unique
+  partida   Partida @relation(fields: [partidaId], references: [id])
+
+  @@map("resultados")
+}
+
+// Modelo Inscricao
+model Inscricao {
+  id            Int      @id @default(autoincrement())
+  dataInscricao DateTime @default(now())
+  status        String   @default("PENDENTE")
+
+  // Relacionamentos
+  timeId       Int
+  time         Time @relation(fields: [timeId], references: [id])
+
+  campeonatoId Int
+  campeonato   Campeonato @relation(fields: [campeonatoId], references: [id])
+
+  @@unique([timeId, campeonatoId]) // Um time só pode se inscrever uma vez por campeonato
+  @@map("inscricoes")
+}
+
+// Modelo Estatistica
+model Estatistica {
+  id           Int @id @default(autoincrement())
+  gols         Int @default(0)
+  assistencias Int @default(0)
+  cartoes      String? // JSON string com array de cartões
+
+  // Relacionamentos
+  jogadorId Int
+  jogador   Jogador @relation(fields: [jogadorId], references: [id])
+
+  partidaId Int
+  partida   Partida @relation(fields: [partidaId], references: [id])
+
+  @@unique([jogadorId, partidaId]) // Uma estatística por jogador por partida
+  @@map("estatisticas")
+}
+
+// Modelo Notificacao
+model Notificacao {
+  id          Int      @id @default(autoincrement())
+  tipo        TipoNotificacao
+  mensagem    String
+  lida        Boolean  @default(false)
+  dataEnvio   DateTime @default(now())
+
+  // Relacionamentos
+  usuarioId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@map("notificacoes")
+}
+
+// Modelo Classificacao
+model Classificacao {
+  id        Int @id @default(autoincrement())
+  posicao   Int
+  pontos    Int @default(0)
+  vitorias  Int @default(0)
+  empates   Int @default(0)
+  derrotas  Int @default(0)
+  golsPro   Int @default(0)
+  golsContra Int @default(0)
+  saldoGols Int @default(0)
+  jogos     Int @default(0)
+
+  // Relacionamentos
+  timeId       Int
+  time         Time @relation(fields: [timeId], references: [id])
+
+  campeonatoId Int
+  campeonato   Campeonato @relation(fields: [campeonatoId], references: [id])
+
+  @@unique([timeId, campeonatoId]) // Uma classificação por time por campeonato
+  @@map("classificacoes")
+}
+
+// Modelo Escalacao (Lineup)
+model Escalacao {
+  id         Int     @id @default(autoincrement())
+  formacao   String  // Ex: "4-4-2", "3-5-2"
+  titular    Boolean @default(true) // true = titular, false = reserva
+
+  // Relacionamentos
+  partidaId  Int
+  partida    Partida @relation(fields: [partidaId], references: [id])
+
+  timeId     Int
+  time       Time @relation(fields: [timeId], references: [id])
+
+  jogadorId  Int
+  jogador    Jogador @relation(fields: [jogadorId], references: [id])
+
+  @@unique([partidaId, timeId, jogadorId]) // Um jogador por time por partida
+  @@map("escalacoes")
+}

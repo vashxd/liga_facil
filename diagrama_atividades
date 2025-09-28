@@ -1,0 +1,51 @@
+6. Diagrama de Atividades
+Fluxo Principal - Criação de Campeonato:
+
+Início → Usuário acessa o sistema
+Login → Sistema valida credenciais
+Dashboard → Usuário seleciona "Criar Campeonato"
+Formulário de Criação:
+
+Nome do campeonato
+Seleção do formato (20 opções)
+Data de início
+Configuração de privacidade
+
+
+Validação → Sistema valida dados inseridos
+Configuração do Formato:
+
+Se Eliminação Simples → Define número de times (potência de 2)
+Se Grupos → Define número de grupos e classificados
+Se Suíço → Define número de rodadas
+
+
+Abertura de Inscrições → Sistema aguarda times
+Fechamento de Inscrições → Verifica mínimo de times
+Sorteio Automático → Distribui times conforme formato
+Geração de Calendário → Cria datas das partidas
+Notificações → Envia para todos os inscritos
+Fim
+
+Fluxo Alternativo - Gestão de Partida:
+
+Início → Organizador acessa partida agendada
+Validação → Verifica se é o dia/hora da partida
+Início da Partida → Ativa modo de registro ao vivo
+Registro de Eventos:
+
+Gols (jogador, minuto)
+Cartões (amarelo/vermelho)
+Substituições
+
+
+Finalização → Confirma resultado
+Atualização Automática:
+
+Tabela de classificação
+Estatísticas individuais
+Próxima fase (se aplicável)
+
+
+Notificações → Envia resultado aos interessados
+Fim

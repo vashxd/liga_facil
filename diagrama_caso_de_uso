@@ -1,0 +1,133 @@
+<svg viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .actor { fill: none; stroke: #333; stroke-width: 2; }
+      .usecase { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
+      .system { fill: none; stroke: #1565c0; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 12px; }
+      .title { font-weight: bold; font-size: 14px; }
+    </style>
+  </defs>
+
+  <!-- Sistema (boundary) -->
+  <rect x="200" y="50" width="600" height="700" class="system" rx="10"/>
+  <text x="500" y="80" text-anchor="middle" class="title">Sistema de Gestão de Campeonatos</text>
+
+  <!-- Atores -->
+  <!-- Usuário -->
+  <circle cx="100" cy="200" r="20" class="actor"/>
+  <line x1="100" y1="220" x2="100" y2="260" class="actor"/>
+  <line x1="80" y1="240" x2="120" y2="240" class="actor"/>
+  <line x1="100" y1="260" x2="80" y2="290" class="actor"/>
+  <line x1="100" y1="260" x2="120" y2="290" class="actor"/>
+  <text x="100" y="310" text-anchor="middle" class="text">Usuário</text>
+
+  <!-- Organizador -->
+  <circle cx="100" cy="450" r="20" class="actor"/>
+  <line x1="100" y1="470" x2="100" y2="510" class="actor"/>
+  <line x1="80" y1="490" x2="120" y2="490" class="actor"/>
+  <line x1="100" y1="510" x2="80" y2="540" class="actor"/>
+  <line x1="100" y1="510" x2="120" y2="540" class="actor"/>
+  <text x="100" y="560" text-anchor="middle" class="text">Organizador</text>
+
+  <!-- Administrador -->
+  <circle cx="900" cy="400" r="20" class="actor"/>
+  <line x1="900" y1="420" x2="900" y2="460" class="actor"/>
+  <line x1="880" y1="440" x2="920" y2="440" class="actor"/>
+  <line x1="900" y1="460" x2="880" y2="490" class="actor"/>
+  <line x1="900" y1="460" x2="920" y2="490" class="actor"/>
+  <text x="900" y="510" text-anchor="middle" class="text">Administrador</text>
+
+  <!-- Casos de Uso -->
+  <!-- Gestão de Conta -->
+  <ellipse cx="350" cy="120" rx="80" ry="30" class="usecase"/>
+  <text x="350" y="125" text-anchor="middle" class="text">Criar Conta</text>
+
+  <ellipse cx="350" cy="190" rx="80" ry="30" class="usecase"/>
+  <text x="350" y="195" text-anchor="middle" class="text">Fazer Login</text>
+
+  <ellipse cx="350" cy="260" rx="80" ry="30" class="usecase"/>
+  <text x="350" y="265" text-anchor="middle" class="text">Gerenciar Perfil</text>
+
+  <!-- Gestão de Times -->
+  <ellipse cx="550" cy="120" rx="80" ry="30" class="usecase"/>
+  <text x="550" y="125" text-anchor="middle" class="text">Criar Time</text>
+
+  <ellipse cx="550" cy="190" rx="80" ry="30" class="usecase"/>
+  <text x="550" y="195" text-anchor="middle" class="text">Adicionar Jogadores</text>
+
+  <ellipse cx="550" cy="260" rx="80" ry="30" class="usecase"/>
+  <text x="550" y="265" text-anchor="middle" class="text">Definir Posições</text>
+
+  <!-- Gestão de Campeonatos -->
+  <ellipse cx="350" cy="380" rx="90" ry="30" class="usecase"/>
+  <text x="350" y="385" text-anchor="middle" class="text">Criar Campeonato</text>
+
+  <ellipse cx="350" cy="450" rx="90" ry="30" class="usecase"/>
+  <text x="350" y="455" text-anchor="middle" class="text">Escolher Formato</text>
+
+  <ellipse cx="350" cy="520" rx="90" ry="30" class="usecase"/>
+  <text x="350" y="525" text-anchor="middle" class="text">Definir Datas</text>
+
+  <ellipse cx="550" cy="380" rx="90" ry="30" class="usecase"/>
+  <text x="550" y="385" text-anchor="middle" class="text">Inscrever Time</text>
+
+  <ellipse cx="550" cy="450" rx="90" ry="30" class="usecase"/>
+  <text x="550" y="455" text-anchor="middle" class="text">Convidar Times</text>
+
+  <!-- Gestão de Partidas -->
+  <ellipse cx="350" cy="620" rx="90" ry="30" class="usecase"/>
+  <text x="350" y="625" text-anchor="middle" class="text">Gerenciar Partida</text>
+
+  <ellipse cx="550" cy="620" rx="90" ry="30" class="usecase"/>
+  <text x="550" y="625" text-anchor="middle" class="text">Registrar Resultado</text>
+
+  <ellipse cx="450" cy="690" rx="90" ry="30" class="usecase"/>
+  <text x="450" y="695" text-anchor="middle" class="text">Registrar Estatísticas</text>
+
+  <!-- Funcionalidades Gerais -->
+  <ellipse cx="700" cy="330" rx="80" ry="30" class="usecase"/>
+  <text x="700" y="335" text-anchor="middle" class="text">Ver Notificações</text>
+
+  <ellipse cx="700" cy="400" rx="80" ry="30" class="usecase"/>
+  <text x="700" y="405" text-anchor="middle" class="text">Ver Classificação</text>
+
+  <ellipse cx="700" cy="470" rx="80" ry="30" class="usecase"/>
+  <text x="700" y="475" text-anchor="middle" class="text">Ver Estatísticas</text>
+
+  <ellipse cx="700" cy="540" rx="80" ry="30" class="usecase"/>
+  <text x="700" y="545" text-anchor="middle" class="text">Buscar Campeonatos</text>
+
+  <!-- Conexões -->
+  <!-- Usuário -->
+  <line x1="120" y1="200" x2="270" y2="120" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="200" x2="270" y2="190" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="200" x2="270" y2="260" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="200" x2="470" y2="120" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="200" x2="470" y2="190" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="200" x2="470" y2="260" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="210" x2="460" y2="380" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="220" x2="620" y2="330" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="230" x2="620" y2="400" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="240" x2="620" y2="540" stroke="#333" stroke-width="1"/>
+
+  <!-- Organizador -->
+  <line x1="120" y1="450" x2="260" y2="380" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="450" x2="260" y2="450" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="450" x2="260" y2="520" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="460" x2="460" y2="450" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="470" x2="260" y2="620" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="480" x2="460" y2="620" stroke="#333" stroke-width="1"/>
+  <line x1="120" y1="490" x2="360" y2="690" stroke="#333" stroke-width="1"/>
+
+  <!-- Administrador -->
+  <line x1="880" y1="400" x2="780" y2="400" stroke="#333" stroke-width="1"/>
+  <line x1="880" y1="410" x2="780" y2="470" stroke="#333" stroke-width="1"/>
+
+  <!-- Include e Extend -->
+  <line x1="350" y1="410" x2="350" y2="420" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="300" y="415" class="text">«include»</text>
+
+  <line x1="550" y1="590" x2="450" y2="660" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="480" y="630" class="text">«extend»</text>
+</svg>

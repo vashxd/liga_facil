@@ -1,0 +1,242 @@
+Epic 1: Gestão de Conta
+US001 - Como usuário, quero criar uma conta para acessar o sistema
+
+Critérios de Aceitação:
+
+Deve validar email único
+Senha com mínimo 8 caracteres
+Confirmação por email
+Prioridade: Alta
+Pontos: 3
+
+
+
+US002 - Como usuário, quero recuperar minha senha caso esqueça
+
+Critérios de Aceitação:
+
+Link de recuperação por email
+Token expira em 24h
+Prioridade: Média
+Pontos: 2
+
+
+
+Epic 2: Gestão de Times
+US003 - Como usuário, quero criar um time com nome e escudo
+
+Critérios de Aceitação:
+
+Nome único do time
+Upload de imagem do escudo (opcional)
+Máximo 30 jogadores por time
+Prioridade: Alta
+Pontos: 5
+
+
+
+US004 - Como gestor do time, quero adicionar jogadores e suas posições
+
+Critérios de Aceitação:
+
+Mínimo 11 jogadores (time titular)
+Cada jogador tem posição obrigatória
+Número da camisa único
+Prioridade: Alta
+Pontos: 3
+
+
+
+US005 - Como gestor do time, quero definir a escalação para cada partida
+
+Critérios de Aceitação:
+
+11 titulares obrigatórios
+Até 7 reservas
+Validar posições (1 goleiro, etc.)
+Prioridade: Alta
+Pontos: 5
+
+
+
+Epic 3: Gestão de Campeonatos
+US006 - Como organizador, quero criar um campeonato escolhendo entre 20 formatos
+
+Critérios de Aceitação:
+
+Selecionar formato da lista
+Configurar regras específicas
+Definir público ou privado
+Prioridade: Alta
+Pontos: 8
+
+
+
+US007 - Como organizador, quero definir datas e locais das partidas
+
+Critérios de Aceitação:
+
+Calendário interativo
+Evitar conflitos de horário
+Adicionar endereço do local
+Prioridade: Alta
+Pontos: 5
+
+
+
+US008 - Como organizador, quero que o sistema faça o sorteio automático
+
+Critérios de Aceitação:
+
+Sorteio aleatório e justo
+Respeitar cabeças de chave (se houver)
+Gerar chaveamento visual
+Prioridade: Alta
+Pontos: 8
+
+
+
+Epic 4: Participação em Campeonatos
+US009 - Como usuário, quero buscar campeonatos públicos disponíveis
+
+Critérios de Aceitação:
+
+Filtros por localização, data, formato
+Ver detalhes antes de inscrever
+Status de vagas disponíveis
+Prioridade: Alta
+Pontos: 3
+
+
+
+US010 - Como usuário, quero inscrever meu time em um campeonato
+
+Critérios de Aceitação:
+
+Validar requisitos mínimos
+Confirmar regulamento
+Receber confirmação
+Prioridade: Alta
+Pontos: 3
+
+
+
+US011 - Como usuário, quero acessar campeonato privado via código
+
+Critérios de Aceitação:
+
+Código único de 6-8 caracteres
+Validar código antes de mostrar detalhes
+Prioridade: Média
+Pontos: 2
+
+
+
+Epic 5: Gestão de Partidas
+US012 - Como organizador, quero registrar o resultado da partida
+
+Critérios de Aceitação:
+
+Placar final obrigatório
+Gols por jogador
+Cartões aplicados
+Prioridade: Alta
+Pontos: 5
+
+
+
+US013 - Como organizador, quero registrar estatísticas detalhadas
+
+Critérios de Aceitação:
+
+Gols, assistências, cartões por jogador
+Substituições realizadas
+Tempo de jogo
+Prioridade: Média
+Pontos: 5
+
+
+
+US014 - Como usuário, quero ver a classificação atualizada em tempo real
+
+Critérios de Aceitação:
+
+Atualização automática após cada partida
+Critérios de desempate configuráveis
+Visualização mobile-friendly
+Prioridade: Alta
+Pontos: 3
+
+
+
+Epic 6: Notificações
+US015 - Como usuário, quero receber notificações sobre meus jogos
+
+Critérios de Aceitação:
+
+Lembrete 24h antes
+Lembrete 2h antes
+Resultado após o jogo
+Prioridade: Alta
+Pontos: 3
+
+
+
+US016 - Como usuário, quero configurar minhas preferências de notificação
+
+Critérios de Aceitação:
+
+Email, push, in-app
+Horários de não perturbar
+Tipos de notificação
+Prioridade: Média
+Pontos: 2
+
+
+
+Epic 7: Estatísticas e Relatórios
+US017 - Como usuário, quero ver estatísticas do meu time
+
+Critérios de Aceitação:
+
+Artilheiros, assistências
+Cartões recebidos
+Histórico de partidas
+Prioridade: Média
+Pontos: 3
+
+
+
+US018 - Como organizador, quero exportar relatórios do campeonato
+
+Critérios de Aceitação:
+
+PDF com classificação final
+Estatísticas completas
+Súmulas das partidas
+Prioridade: Baixa
+Pontos: 5
+
+
+
+Epic 8: Funcionalidades Sociais
+US019 - Como usuário, quero convidar amigos para meu time
+
+Critérios de Aceitação:
+
+Envio por email ou link
+Aceite necessário
+Prioridade: Baixa
+Pontos: 3
+
+
+
+US020 - Como usuário, quero comentar nas partidas
+
+Critérios de Aceitação:
+
+Comentários moderados
+Respostas em thread
+Notificações de respostas
+Prioridade: Baixa
+Pontos: 5

@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogActions,
   Fade,
-  Grow,
   useTheme,
   alpha,
   IconButton,
@@ -29,8 +28,7 @@ import {
   ListItemAvatar,
   ListItemText,
   ListItemSecondaryAction,
-  Divider,
-  Grid
+  Divider
 } from '@mui/material';
 import {
   ArrowBack,
@@ -39,11 +37,8 @@ import {
   People,
   PlayArrow,
   Settings,
-  EmojiEvents,
   Sports,
-  Schedule,
   Warning,
-  CheckCircle,
   RemoveCircle,
   Save,
   Cancel
@@ -114,6 +109,7 @@ const ManageChampionship: React.FC = () => {
     if (id) {
       loadChampionshipData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadChampionshipData = async () => {
@@ -293,31 +289,35 @@ const ManageChampionship: React.FC = () => {
             />
           </Box>
         ) : (
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+          <Box display="flex" flexDirection="column" gap={2}>
+            <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Nome
               </Typography>
               <Typography variant="h6" mb={2}>
                 {championship.nome}
               </Typography>
+            </Box>
 
+            <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Formato
               </Typography>
               <Typography variant="body1" mb={2}>
                 {championship.formato}
               </Typography>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} md={6}>
+            <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Data de Início
               </Typography>
               <Typography variant="body1" mb={2}>
                 {new Date(championship.dataInicio).toLocaleDateString('pt-BR')}
               </Typography>
+            </Box>
 
+            <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Tipo
               </Typography>
@@ -326,19 +326,19 @@ const ManageChampionship: React.FC = () => {
                 color={championship.privado ? 'secondary' : 'primary'}
                 sx={{ mb: 2 }}
               />
+            </Box>
 
-              {championship.privado && championship.codigo && (
-                <>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Código de Acesso
-                  </Typography>
-                  <Typography variant="h6" color="primary" fontFamily="monospace">
-                    {championship.codigo}
-                  </Typography>
-                </>
-              )}
-            </Grid>
-          </Grid>
+            {championship.privado && championship.codigo && (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Código de Acesso
+                </Typography>
+                <Typography variant="h6" color="primary" fontFamily="monospace">
+                  {championship.codigo}
+                </Typography>
+              </Box>
+            )}
+          </Box>
         )}
 
         <Divider sx={{ my: 3 }} />

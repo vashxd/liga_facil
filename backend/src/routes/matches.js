@@ -8,6 +8,7 @@ const {
   updateResultValidation
 } = require('../controllers/matchController');
 const auth = require('../middleware/auth');
+const { prisma } = require('../utils/prisma');
 
 const router = express.Router();
 

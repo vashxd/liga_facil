@@ -183,6 +183,9 @@ const updateMatchResult = async (req, res) => {
       if (match.campeonato.formato === 'PONTOS_CORRIDOS') {
         await updateStandings(tx, match.campeonatoId, match.timeCasaId, match.timeVisitanteId, golsTimeCasa, golsTimeVisitante);
       }
+
+      // Verificar se deve gerar próxima fase para formatos eliminatórios
+      await checkAndGenerateNextPhase(tx, match, golsTimeCasa, golsTimeVisitante);
     });
 
     // Buscar partida atualizada
@@ -364,6 +367,156 @@ const updateMatchDateTime = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
+};
+
+// Função para verificar e gerar próxima fase do torneio
+const checkAndGenerateNextPhase = async (tx, match, homeGoals, awayGoals) => {
+  const championship = match.campeonato;
+  const currentPhase = match.fase;
+
+  // Formatos eliminatórios que precisam de geração de próximas fases
+  const eliminationFormats = [
+    'ELIMINACAO_SIMPLES',
+    'MATA_MATA',
+    'COPA',
+    'ELIMINACAO_DUPLA',
+    'SUICO_ELIMINATORIO'
+  ];
+
+  if (!eliminationFormats.includes(championship.formato)) {
+    return; // Não é um formato que precisa de próximas fases
+  }
+
+  // Determinar vencedor
+  let winnerId, loserId;
+  if (homeGoals > awayGoals) {
+    winnerId = match.timeCasaId;
+    loserId = match.timeVisitanteId;
+  } else if (awayGoals > homeGoals) {
+    winnerId = match.timeVisitanteId;
+    loserId = match.timeCasaId;
+  } else {
+    // Empate - implementar critério de desempate (penaltis, etc.)
+    // Por enquanto, vamos considerar que o time da casa avança
+    winnerId = match.timeCasaId;
+    loserId = match.timeVisitanteId;
+  }
+
+  // Verificar se todas as partidas da fase atual foram finalizadas
+  const phaseMatches = await tx.partida.findMany({
+    where: {
+      campeonatoId: match.campeonatoId,
+      fase: currentPhase
+    }
+  });
+
+  const finishedMatches = phaseMatches.filter(m => m.status === 'FINALIZADA' || m.id === match.id);
+  const allPhaseMatchesFinished = finishedMatches.length === phaseMatches.length;
+
+  if (!allPhaseMatchesFinished) {
+    return; // Ainda há partidas pendentes nesta fase
+  }
+
+  // Coletar todos os vencedores da fase atual
+  const winners = [];
+
+  for (const phaseMatch of phaseMatches) {
+    let phaseWinnerId;
+
+    if (phaseMatch.id === match.id) {
+      phaseWinnerId = winnerId;
+    } else {
+      const result = await tx.resultado.findUnique({
+        where: { partidaId: phaseMatch.id }
+      });
+
+      if (result) {
+        if (result.golsTimeCasa > result.golsTimeVisitante) {
+          phaseWinnerId = phaseMatch.timeCasaId;
+        } else if (result.golsTimeVisitante > result.golsTimeCasa) {
+          phaseWinnerId = phaseMatch.timeVisitanteId;
+        } else {
+          // Empate - time da casa avança (critério simplificado)
+          phaseWinnerId = phaseMatch.timeCasaId;
+        }
+      }
+    }
+
+    if (phaseWinnerId) {
+      winners.push(phaseWinnerId);
+    }
+  }
+
+  // Se só sobrou 1 vencedor, o torneio terminou
+  if (winners.length === 1) {
+    await tx.campeonato.update({
+      where: { id: match.campeonatoId },
+      data: {
+        status: 'FINALIZADO',
+        campeaoId: winners[0]
+      }
+    });
+    return;
+  }
+
+  // Gerar próxima fase
+  await generateNextPhase(tx, championship, winners, currentPhase);
+};
+
+// Função para gerar partidas da próxima fase
+const generateNextPhase = async (tx, championship, winners, currentPhase) => {
+  const nextPhase = getNextPhaseName(currentPhase, winners.length);
+
+  if (!nextPhase) {
+    return; // Não há próxima fase
+  }
+
+  // Embaralhar vencedores para evitar confrontos previsíveis
+  const shuffledWinners = [...winners].sort(() => Math.random() - 0.5);
+
+  // Gerar partidas da próxima fase
+  const nextPhaseMatches = [];
+  for (let i = 0; i < shuffledWinners.length; i += 2) {
+    if (i + 1 < shuffledWinners.length) {
+      nextPhaseMatches.push({
+        campeonatoId: championship.id,
+        timeCasaId: shuffledWinners[i],
+        timeVisitanteId: shuffledWinners[i + 1],
+        fase: nextPhase,
+        dataHora: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 1 semana a partir de agora
+        status: 'AGENDADA'
+      });
+    }
+  }
+
+  // Criar as partidas da próxima fase
+  if (nextPhaseMatches.length > 0) {
+    await tx.partida.createMany({
+      data: nextPhaseMatches
+    });
+  }
+};
+
+// Função auxiliar para determinar o nome da próxima fase
+const getNextPhaseName = (currentPhase, winnersCount) => {
+  const phaseMap = {
+    'OITAVAS': 'QUARTAS',
+    'QUARTAS': 'SEMI',
+    'SEMIFINAL': 'FINAL',
+    'SEMI': 'FINAL',
+    'FINAL': null // Não há próxima fase após a final
+  };
+
+  // Se não está no mapa, determinar pela quantidade de times
+  if (!phaseMap[currentPhase]) {
+    if (winnersCount >= 16) return 'OITAVAS';
+    if (winnersCount >= 8) return 'QUARTAS';
+    if (winnersCount >= 4) return 'SEMI';
+    if (winnersCount >= 2) return 'FINAL';
+    return null;
+  }
+
+  return phaseMap[currentPhase];
 };
 
 module.exports = {

@@ -247,6 +247,11 @@ export const matchService = {
     const response = await api.put(`/matches/${matchId}/datetime`, { dataHora });
     return response.data;
   },
+
+  async processNextPhase(championshipId: number) {
+    const response = await api.post(`/matches/championship/${championshipId}/process-next-phase`);
+    return response.data;
+  },
 };
 
 // Serviços de notificações

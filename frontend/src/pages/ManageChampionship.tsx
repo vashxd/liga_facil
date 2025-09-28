@@ -41,9 +41,10 @@ import {
   Warning,
   RemoveCircle,
   Save,
-  Cancel
+  Cancel,
+  FastForward
 } from '@mui/icons-material';
-import { championshipService } from '../services/api';
+import { championshipService, matchService } from '../services/api';
 
 interface Championship {
   id: number;
@@ -192,6 +193,20 @@ const ManageChampionship: React.FC = () => {
       navigate(`/championships/${id}`);
     } catch (error: any) {
       setError(error.response?.data?.error || 'Erro ao gerar chaves');
+      setActionLoading(false);
+    }
+  };
+
+  const handleProcessNextPhase = async () => {
+    try {
+      setActionLoading(true);
+      const result = await matchService.processNextPhase(Number(id));
+      setError('');
+      alert(`Próxima fase processada com sucesso! ${result.message}`);
+      // Navegar para a página de detalhes para ver as novas partidas
+      navigate(`/championships/${id}`);
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Erro ao processar próxima fase');
       setActionLoading(false);
     }
   };
@@ -352,6 +367,16 @@ const ManageChampionship: React.FC = () => {
             disabled={enrollments.length < 2 || actionLoading}
           >
             Gerar Chaves
+          </Button>
+
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<FastForward />}
+            onClick={handleProcessNextPhase}
+            disabled={actionLoading}
+          >
+            Processar Próxima Fase
           </Button>
 
           <Button

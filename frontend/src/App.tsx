@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CreateTeam from './pages/CreateTeam';
+import EditTeam from './pages/EditTeam';
 import CreateChampionship from './pages/CreateChampionship';
 import Teams from './pages/Teams';
 import TeamDetails from './pages/TeamDetails';
@@ -46,6 +47,12 @@ function App() {
           <Route path="/teams/:id" element={
             <ProtectedRoute>
               <TeamDetails />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/teams/:id/edit" element={
+            <ProtectedRoute>
+              <EditTeam />
             </ProtectedRoute>
           } />
 

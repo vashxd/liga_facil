@@ -10,7 +10,9 @@
       "Bash(curl:*)",
       "Bash(npm uninstall:*)",
       "Bash(npx prisma:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm start)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

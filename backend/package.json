@@ -7,7 +7,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "prisma generate && prisma migrate deploy",
-    "postbuild": "prisma db seed",
+    "render-build": "npm install && prisma generate && prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

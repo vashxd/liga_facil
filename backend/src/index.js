@@ -21,7 +21,7 @@ app.use(helmet());
 // CORS Configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL, 'https://*.railway.app']
+    ? [process.env.FRONTEND_URL, 'https://*.onrender.com']
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   optionsSuccessStatus: 200

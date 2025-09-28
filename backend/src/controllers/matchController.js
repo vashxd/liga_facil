@@ -181,11 +181,22 @@ const updateMatchResult = async (req, res) => {
 
       // Atualizar classificações se for pontos corridos
       if (match.campeonato.formato === 'PONTOS_CORRIDOS') {
-        await updateStandings(tx, match.campeonatoId, match.timeCasaId, match.timeVisitanteId, golsTimeCasa, golsTimeVisitante);
+        try {
+          await updateStandings(tx, match.campeonatoId, match.timeCasaId, match.timeVisitanteId, golsTimeCasa, golsTimeVisitante);
+        } catch (error) {
+          console.error('Erro ao atualizar classificações:', error);
+        }
       }
 
       // Verificar se deve gerar próxima fase para formatos eliminatórios
-      await checkAndGenerateNextPhase(tx, match, golsTimeCasa, golsTimeVisitante);
+      try {
+        if (typeof checkAndGenerateNextPhase === 'function') {
+          await checkAndGenerateNextPhase(tx, match, golsTimeCasa, golsTimeVisitante);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar próxima fase:', error);
+        // Não falhar a transação por causa disso
+      }
     });
 
     // Buscar partida atualizada

@@ -9,6 +9,9 @@ const {
   updateChampionship,
   generateMatches,
   getChampionshipStandings,
+  deleteChampionship,
+  getChampionshipEnrollments,
+  removeTeamFromChampionship,
   createChampionshipValidation
 } = require('../controllers/championshipController');
 const auth = require('../middleware/auth');
@@ -41,6 +44,15 @@ router.get('/:id/standings', getChampionshipStandings);
 
 // PUT /api/championships/:id - Atualizar campeonato
 router.put('/:id', updateChampionship);
+
+// GET /api/championships/:id/enrollments - Listar inscrições do campeonato
+router.get('/:id/enrollments', getChampionshipEnrollments);
+
+// DELETE /api/championships/:id/teams/:teamId - Remover time do campeonato
+router.delete('/:id/teams/:teamId', removeTeamFromChampionship);
+
+// DELETE /api/championships/:id - Deletar campeonato
+router.delete('/:id', deleteChampionship);
 
 // GET /api/championships/:id - Obter detalhes de um campeonato (sem autenticação, mas pode estar após auth para dar prioridade às rotas específicas)
 router.get('/:id', getChampionshipById);

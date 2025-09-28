@@ -647,7 +647,7 @@ const Championships: React.FC = () => {
                           color="info"
                           size="small"
                           startIcon={<Settings />}
-                          onClick={() => alert('Funcionalidade de edição será implementada em breve')}
+                          onClick={() => navigate(`/championships/${championship.id}/manage`)}
                         >
                           Gerenciar
                         </Button>

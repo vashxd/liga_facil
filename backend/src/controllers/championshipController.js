@@ -617,6 +617,157 @@ const generateChampionshipCode = () => {
   return result;
 };
 
+// Deletar campeonato
+const deleteChampionship = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Verificar se o campeonato pertence ao usuário
+    const championship = await prisma.campeonato.findFirst({
+      where: {
+        id: parseInt(id),
+        organizadorId: userId
+      },
+      include: {
+        partidas: true,
+        inscricoes: true
+      }
+    });
+
+    if (!championship) {
+      return res.status(404).json({ error: 'Campeonato não encontrado' });
+    }
+
+    // Verificar se já tem partidas jogadas
+    const hasPlayedMatches = championship.partidas.some(partida => partida.status === 'FINALIZADA');
+    if (hasPlayedMatches) {
+      return res.status(400).json({ error: 'Não é possível deletar campeonato com partidas já finalizadas' });
+    }
+
+    // Deletar em cascata: primeiro partidas, depois inscrições, depois campeonato
+    await prisma.$transaction(async (prisma) => {
+      // Deletar partidas
+      await prisma.partida.deleteMany({
+        where: { campeonatoId: parseInt(id) }
+      });
+
+      // Deletar inscrições
+      await prisma.inscricao.deleteMany({
+        where: { campeonatoId: parseInt(id) }
+      });
+
+      // Deletar campeonato
+      await prisma.campeonato.delete({
+        where: { id: parseInt(id) }
+      });
+    });
+
+    res.json({ message: 'Campeonato deletado com sucesso' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// Listar inscrições do campeonato
+const getChampionshipEnrollments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Verificar se o campeonato pertence ao usuário
+    const championship = await prisma.campeonato.findFirst({
+      where: {
+        id: parseInt(id),
+        organizadorId: userId
+      }
+    });
+
+    if (!championship) {
+      return res.status(404).json({ error: 'Campeonato não encontrado' });
+    }
+
+    const enrollments = await prisma.inscricao.findMany({
+      where: {
+        campeonatoId: parseInt(id)
+      },
+      include: {
+        time: {
+          include: {
+            criador: {
+              select: { id: true, nome: true, email: true }
+            },
+            _count: {
+              select: { jogadores: true }
+            }
+          }
+        }
+      },
+      orderBy: {
+        dataInscricao: 'asc'
+      }
+    });
+
+    res.json({ enrollments });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// Remover time do campeonato
+const removeTeamFromChampionship = async (req, res) => {
+  try {
+    const { id, teamId } = req.params;
+    const userId = req.user.id;
+
+    // Verificar se o campeonato pertence ao usuário
+    const championship = await prisma.campeonato.findFirst({
+      where: {
+        id: parseInt(id),
+        organizadorId: userId
+      },
+      include: {
+        partidas: true
+      }
+    });
+
+    if (!championship) {
+      return res.status(404).json({ error: 'Campeonato não encontrado' });
+    }
+
+    // Verificar se já foram geradas partidas
+    if (championship.partidas.length > 0) {
+      return res.status(400).json({ error: 'Não é possível remover times após as chaves terem sido geradas' });
+    }
+
+    // Verificar se o time está inscrito
+    const enrollment = await prisma.inscricao.findFirst({
+      where: {
+        campeonatoId: parseInt(id),
+        timeId: parseInt(teamId)
+      }
+    });
+
+    if (!enrollment) {
+      return res.status(404).json({ error: 'Time não está inscrito neste campeonato' });
+    }
+
+    // Remover inscrição
+    await prisma.inscricao.delete({
+      where: {
+        id: enrollment.id
+      }
+    });
+
+    res.json({ message: 'Time removido do campeonato com sucesso' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
 module.exports = {
   createChampionship,
   getPublicChampionships,
@@ -627,6 +778,9 @@ module.exports = {
   updateChampionship,
   generateMatches,
   getChampionshipStandings,
+  deleteChampionship,
+  getChampionshipEnrollments,
+  removeTeamFromChampionship,
   createChampionshipValidation,
   generateChampionshipCode
 };

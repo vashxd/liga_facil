@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import CreateTeam from './pages/CreateTeam';
 import EditTeam from './pages/EditTeam';
 import CreateChampionship from './pages/CreateChampionship';
+import ManageChampionship from './pages/ManageChampionship';
 import Teams from './pages/Teams';
 import TeamDetails from './pages/TeamDetails';
 import Championships from './pages/Championships';
@@ -71,6 +72,12 @@ function App() {
           <Route path="/championships/:id" element={
             <ProtectedRoute>
               <ChampionshipDetails />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/championships/:id/manage" element={
+            <ProtectedRoute>
+              <ManageChampionship />
             </ProtectedRoute>
           } />
 

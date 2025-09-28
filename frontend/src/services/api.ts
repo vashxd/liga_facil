@@ -199,6 +199,21 @@ export const championshipService = {
     const response = await api.get(`/championships/${championshipId}/standings`);
     return response.data;
   },
+
+  async deleteChampionship(championshipId: number) {
+    const response = await api.delete(`/championships/${championshipId}`);
+    return response.data;
+  },
+
+  async getChampionshipEnrollments(championshipId: number) {
+    const response = await api.get(`/championships/${championshipId}/enrollments`);
+    return response.data;
+  },
+
+  async removeTeamFromChampionship(championshipId: number, teamId: number) {
+    const response = await api.delete(`/championships/${championshipId}/teams/${teamId}`);
+    return response.data;
+  },
 };
 
 // Serviços de partidas

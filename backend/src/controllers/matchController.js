@@ -182,6 +182,15 @@ const updateMatchResult = async (req, res) => {
 
       console.log('Resultado registrado com sucesso para partida:', id);
 
+      // Atualizar classificações se for pontos corridos
+      if (match.campeonato.formato === 'PONTOS_CORRIDOS') {
+        try {
+          await updateStandings(match.campeonatoId, match.timeCasaId, match.timeVisitanteId, parseInt(golsTimeCasa), parseInt(golsTimeVisitante));
+        } catch (error) {
+          console.error('Erro ao atualizar classificações:', error);
+        }
+      }
+
       // Verificar se deve gerar próxima fase para formatos eliminatórios
       try {
         await checkAndGenerateNextPhase(match, parseInt(golsTimeCasa), parseInt(golsTimeVisitante));
@@ -218,8 +227,10 @@ const updateMatchResult = async (req, res) => {
   }
 };
 
-// Função auxiliar para atualizar classificações
-const updateStandings = async (tx, championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals) => {
+// Função simplificada para atualizar classificações (sem transação)
+const updateStandings = async (championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals) => {
+  console.log('Atualizando classificações:', { championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals });
+
   // Determinar resultado
   let homePoints = 0;
   let awayPoints = 0;
@@ -241,8 +252,10 @@ const updateStandings = async (tx, championshipId, homeTeamId, awayTeamId, homeG
     awayDraws = 1;
   }
 
+  console.log('Pontos calculados:', { homePoints, awayPoints });
+
   // Atualizar classificação do time da casa
-  await tx.classificacao.upsert({
+  await prisma.classificacao.upsert({
     where: {
       timeId_campeonatoId: {
         timeId: homeTeamId,
@@ -275,7 +288,7 @@ const updateStandings = async (tx, championshipId, homeTeamId, awayTeamId, homeG
   });
 
   // Atualizar classificação do time visitante
-  await tx.classificacao.upsert({
+  await prisma.classificacao.upsert({
     where: {
       timeId_campeonatoId: {
         timeId: awayTeamId,
@@ -308,7 +321,7 @@ const updateStandings = async (tx, championshipId, homeTeamId, awayTeamId, homeG
   });
 
   // Recalcular posições
-  const standings = await tx.classificacao.findMany({
+  const standings = await prisma.classificacao.findMany({
     where: { campeonatoId: championshipId },
     orderBy: [
       { pontos: 'desc' },
@@ -319,14 +332,19 @@ const updateStandings = async (tx, championshipId, homeTeamId, awayTeamId, homeG
     ]
   });
 
+  console.log('Recalculando posições para', standings.length, 'times');
+
   // Atualizar posições
   for (let i = 0; i < standings.length; i++) {
-    await tx.classificacao.update({
+    await prisma.classificacao.update({
       where: { id: standings[i].id },
       data: { posicao: i + 1 }
     });
   }
+
+  console.log('Classificações atualizadas com sucesso');
 };
+
 
 // Atualizar data/hora da partida
 const updateMatchDateTime = async (req, res) => {

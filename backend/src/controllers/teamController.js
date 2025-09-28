@@ -271,6 +271,139 @@ const updateTeam = async (req, res) => {
   }
 };
 
+// Obter campeonatos que o time está participando
+const getTeamChampionships = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Verificar se o time pertence ao usuário
+    const team = await prisma.time.findFirst({
+      where: {
+        id: parseInt(id),
+        criadorId: userId
+      }
+    });
+
+    if (!team) {
+      return res.status(404).json({ error: 'Time não encontrado ou você não tem permissão para visualizá-lo' });
+    }
+
+    // Buscar campeonatos em que o time está inscrito
+    const championships = await prisma.inscricao.findMany({
+      where: {
+        timeId: parseInt(id)
+      },
+      include: {
+        campeonato: {
+          include: {
+            organizador: {
+              select: { id: true, nome: true, email: true }
+            },
+            _count: {
+              select: {
+                inscricoes: true,
+                partidas: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const championshipList = championships.map(inscription => ({
+      ...inscription.campeonato,
+      dataInscricao: inscription.dataInscricao,
+      totalTimes: inscription.campeonato._count.inscricoes,
+      totalPartidas: inscription.campeonato._count.partidas
+    }));
+
+    res.json({
+      championships: championshipList
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+// Obter partidas do time
+const getTeamMatches = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const { status, limit } = req.query;
+
+    // Verificar se o time pertence ao usuário
+    const team = await prisma.time.findFirst({
+      where: {
+        id: parseInt(id),
+        criadorId: userId
+      }
+    });
+
+    if (!team) {
+      return res.status(404).json({ error: 'Time não encontrado ou você não tem permissão para visualizá-lo' });
+    }
+
+    // Construir filtros
+    const where = {
+      OR: [
+        { timeCasaId: parseInt(id) },
+        { timeVisitanteId: parseInt(id) }
+      ]
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    const options = {
+      where,
+      include: {
+        timeCasa: {
+          select: { id: true, nome: true, escudo: true }
+        },
+        timeVisitante: {
+          select: { id: true, nome: true, escudo: true }
+        },
+        campeonato: {
+          select: { id: true, nome: true, formato: true }
+        }
+      },
+      orderBy: { dataHora: 'desc' }
+    };
+
+    if (limit) {
+      options.take = parseInt(limit);
+    }
+
+    const matches = await prisma.partida.findMany(options);
+
+    // Categorizar partidas
+    const now = new Date();
+    const categorizedMatches = {
+      proximas: matches.filter(match =>
+        match.status === 'AGENDADA' && new Date(match.dataHora) > now
+      ),
+      andamento: matches.filter(match =>
+        match.status === 'EM_ANDAMENTO'
+      ),
+      finalizadas: matches.filter(match =>
+        match.status === 'FINALIZADA'
+      ),
+      todas: matches
+    };
+
+    res.json({
+      matches: categorizedMatches
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
 module.exports = {
   createTeam,
   getUserTeams,
@@ -278,6 +411,8 @@ module.exports = {
   addPlayer,
   removePlayer,
   updateTeam,
+  getTeamChampionships,
+  getTeamMatches,
   createTeamValidation,
   addPlayerValidation,
   updateTeamValidation

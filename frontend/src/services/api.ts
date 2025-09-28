@@ -137,6 +137,16 @@ export const teamService = {
     const response = await api.delete(`/teams/${teamId}/players/${playerId}`);
     return response.data;
   },
+
+  async getTeamChampionships(teamId: number) {
+    const response = await api.get(`/teams/${teamId}/championships`);
+    return response.data;
+  },
+
+  async getTeamMatches(teamId: number, params?: { status?: string; limit?: number }) {
+    const response = await api.get(`/teams/${teamId}/matches`, { params });
+    return response.data;
+  },
 };
 
 // Serviços de campeonatos

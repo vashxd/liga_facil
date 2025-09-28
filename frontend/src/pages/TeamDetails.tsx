@@ -38,7 +38,8 @@ import {
   Delete,
   Close,
   Badge,
-  SportsFootball
+  SportsFootball,
+  EmojiEvents
 } from '@mui/icons-material';
 import { teamService } from '../services/api';
 
@@ -62,6 +63,48 @@ interface Team {
   };
 }
 
+interface Championship {
+  id: number;
+  nome: string;
+  formato: string;
+  dataInicio: string;
+  privado: boolean;
+  organizador: {
+    id: number;
+    nome: string;
+    email: string;
+  };
+  dataInscricao: string;
+  totalTimes: number;
+  totalPartidas: number;
+}
+
+interface Match {
+  id: number;
+  dataHora: string;
+  local?: string;
+  fase: string;
+  status: string;
+  golsCasa?: number;
+  golsVisitante?: number;
+  observacoes?: string;
+  timeCasa: {
+    id: number;
+    nome: string;
+    escudo?: string;
+  };
+  timeVisitante: {
+    id: number;
+    nome: string;
+    escudo?: string;
+  };
+  campeonato: {
+    id: number;
+    nome: string;
+    formato: string;
+  };
+}
+
 const TeamDetails: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -75,9 +118,27 @@ const TeamDetails: React.FC = () => {
     numero: '',
   });
 
+  // States para campeonatos e partidas
+  const [championships, setChampionships] = useState<Championship[]>([]);
+  const [matches, setMatches] = useState<{
+    proximas: Match[];
+    andamento: Match[];
+    finalizadas: Match[];
+    todas: Match[];
+  }>({
+    proximas: [],
+    andamento: [],
+    finalizadas: [],
+    todas: []
+  });
+  const [loadingChampionships, setLoadingChampionships] = useState(false);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+
   useEffect(() => {
     if (id) {
       loadTeam();
+      loadChampionships();
+      loadMatches();
     }
   }, [id]);
 
@@ -90,6 +151,32 @@ const TeamDetails: React.FC = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadChampionships = async () => {
+    if (!id) return;
+    setLoadingChampionships(true);
+    try {
+      const response = await teamService.getTeamChampionships(parseInt(id));
+      setChampionships(response.championships);
+    } catch (error: any) {
+      console.error('Erro ao carregar campeonatos:', error);
+    } finally {
+      setLoadingChampionships(false);
+    }
+  };
+
+  const loadMatches = async () => {
+    if (!id) return;
+    setLoadingMatches(true);
+    try {
+      const response = await teamService.getTeamMatches(parseInt(id));
+      setMatches(response.matches);
+    } catch (error: any) {
+      console.error('Erro ao carregar partidas:', error);
+    } finally {
+      setLoadingMatches(false);
     }
   };
 
@@ -106,7 +193,7 @@ const TeamDetails: React.FC = () => {
 
       setNewPlayer({ nome: '', posicao: '', numero: '' });
       setShowAddPlayer(false);
-      loadTeam(); // Recarregar dados do time
+      loadTeam();
     } catch (error: any) {
       alert(error.response?.data?.error || 'Erro ao adicionar jogador');
     }
@@ -118,7 +205,7 @@ const TeamDetails: React.FC = () => {
     if (window.confirm('Tem certeza que deseja remover este jogador?')) {
       try {
         await teamService.removePlayer(team.id, playerId);
-        loadTeam(); // Recarregar dados do time
+        loadTeam();
       } catch (error: any) {
         alert('Erro ao remover jogador');
       }
@@ -174,7 +261,7 @@ const TeamDetails: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header Moderno */}
+      {/* Header */}
       <Fade in timeout={800}>
         <Paper
           elevation={4}
@@ -188,17 +275,6 @@ const TeamDetails: React.FC = () => {
             overflow: 'hidden'
           }}
         >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -50,
-              right: -50,
-              width: 150,
-              height: 150,
-              background: alpha('#fff', 0.1),
-              borderRadius: '50%'
-            }}
-          />
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Box display="flex" alignItems="center" gap={2}>
               <Groups sx={{ fontSize: 40 }} />
@@ -277,8 +353,198 @@ const TeamDetails: React.FC = () => {
         </Paper>
       </Fade>
 
-      {/* Lista de Jogadores */}
+      {/* Campeonatos */}
       <Fade in timeout={1200}>
+        <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={3}>
+            <EmojiEvents color="primary" />
+            <Typography variant="h5" fontWeight="bold">
+              Campeonatos Participando
+            </Typography>
+          </Box>
+
+          <Divider sx={{ mb: 3 }} />
+
+          {loadingChampionships ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          ) : championships.length === 0 ? (
+            <Paper elevation={1} sx={{ p: 6, textAlign: 'center', borderRadius: 3, bgcolor: alpha(theme.palette.info.main, 0.05) }}>
+              <EmojiEvents sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" fontWeight="bold" color="text.primary" mb={1}>
+                Nenhum campeonato encontrado
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Este time ainda não está participando de nenhum campeonato.
+              </Typography>
+            </Paper>
+          ) : (
+            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(2, 1fr)' }} gap={3}>
+              {championships.map((championship, index) => (
+                <Grow in timeout={800 + (index * 100)} key={championship.id}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      borderRadius: 3,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: 6
+                      },
+                      background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)'
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          <EmojiEvents />
+                        </Avatar>
+                        <Box flex={1}>
+                          <Typography variant="h6" fontWeight="bold" mb={0.5}>
+                            {championship.nome}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            por {championship.organizador.nome}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box display="flex" flexWrap="wrap" gap={1} mb={2}>
+                        <Chip
+                          label={championship.formato}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                        <Chip
+                          label={`${championship.totalTimes} times`}
+                          size="small"
+                          color="secondary"
+                          variant="outlined"
+                        />
+                        <Chip
+                          label={`${championship.totalPartidas} partidas`}
+                          size="small"
+                          color="info"
+                          variant="outlined"
+                        />
+                      </Box>
+
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" color="text.secondary">
+                          Início: {new Date(championship.dataInicio).toLocaleDateString('pt-BR')}
+                        </Typography>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => navigate(`/championships/${championship.id}`)}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grow>
+              ))}
+            </Box>
+          )}
+        </Paper>
+      </Fade>
+
+      {/* Partidas */}
+      <Fade in timeout={1400}>
+        <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={3}>
+            <SportsFootball color="primary" />
+            <Typography variant="h5" fontWeight="bold">
+              Partidas do Time
+            </Typography>
+          </Box>
+
+          <Divider sx={{ mb: 3 }} />
+
+          {loadingMatches ? (
+            <Box display="flex" justifyContent="center" p={4}>
+              <CircularProgress />
+            </Box>
+          ) : matches.todas.length === 0 ? (
+            <Paper elevation={1} sx={{ p: 6, textAlign: 'center', borderRadius: 3, bgcolor: alpha(theme.palette.info.main, 0.05) }}>
+              <SportsFootball sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" fontWeight="bold" color="text.primary" mb={1}>
+                Nenhuma partida encontrada
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Este time ainda não tem partidas marcadas.
+              </Typography>
+            </Paper>
+          ) : (
+            <Box>
+              <Box display="flex" flexWrap="wrap" gap={2} mb={3}>
+                <Chip label={`Total: ${matches.todas.length}`} color="info" />
+                <Chip label={`Próximas: ${matches.proximas.length}`} color="warning" />
+                <Chip label={`Em andamento: ${matches.andamento.length}`} color="error" />
+                <Chip label={`Finalizadas: ${matches.finalizadas.length}`} color="success" />
+              </Box>
+
+              {matches.todas.slice(0, 5).map((match, index) => {
+                const isHome = match.timeCasa.id === team?.id;
+                const opponentName = isHome ? match.timeVisitante.nome : match.timeCasa.nome;
+                const teamGoals = isHome ? match.golsCasa : match.golsVisitante;
+                const opponentGoals = isHome ? match.golsVisitante : match.golsCasa;
+
+                return (
+                  <Grow in timeout={800 + (index * 100)} key={match.id}>
+                    <Card elevation={1} sx={{ mb: 2, borderRadius: 2 }}>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Box>
+                            <Typography variant="h6" fontWeight="bold" mb={1}>
+                              {match.campeonato.nome}
+                            </Typography>
+                            <Typography variant="body1" mb={1}>
+                              vs {opponentName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {new Date(match.dataHora).toLocaleString('pt-BR')}
+                            </Typography>
+                          </Box>
+                          <Box textAlign="right">
+                            <Chip
+                              label={match.status}
+                              color={
+                                match.status === 'FINALIZADA' ? 'success' :
+                                match.status === 'EM_ANDAMENTO' ? 'error' : 'warning'
+                              }
+                              size="small"
+                              sx={{ mb: 1 }}
+                            />
+                            {teamGoals !== undefined && opponentGoals !== undefined && (
+                              <Typography variant="h6" fontWeight="bold">
+                                {teamGoals} x {opponentGoals}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                );
+              })}
+
+              {matches.todas.length > 5 && (
+                <Typography variant="body2" color="text.secondary" textAlign="center" mt={2}>
+                  Mostrando 5 de {matches.todas.length} partidas
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Paper>
+      </Fade>
+
+      {/* Jogadores */}
+      <Fade in timeout={1600}>
         <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Box display="flex" alignItems="center" gap={1}>

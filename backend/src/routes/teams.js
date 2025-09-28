@@ -6,6 +6,8 @@ const {
   addPlayer,
   removePlayer,
   updateTeam,
+  getTeamChampionships,
+  getTeamMatches,
   createTeamValidation,
   addPlayerValidation,
   updateTeamValidation
@@ -34,5 +36,11 @@ router.post('/:id/players', addPlayerValidation, addPlayer);
 
 // DELETE /api/teams/:id/players/:playerId - Remover jogador do time
 router.delete('/:id/players/:playerId', removePlayer);
+
+// GET /api/teams/:id/championships - Obter campeonatos do time
+router.get('/:id/championships', getTeamChampionships);
+
+// GET /api/teams/:id/matches - Obter partidas do time
+router.get('/:id/matches', getTeamMatches);
 
 module.exports = router;

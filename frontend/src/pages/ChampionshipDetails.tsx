@@ -163,9 +163,9 @@ const ChampionshipDetails: React.FC = () => {
     setSelectedMatch(match);
     if (match.resultado) {
       setResultForm({
-        golsTimeCasa: match.resultado.golsTimeCasa.toString(),
-        golsTimeVisitante: match.resultado.golsTimeVisitante.toString(),
-        observacoes: match.resultado.observacoes || ''
+        golsTimeCasa: match.resultado.golsCasa.toString(),
+        golsTimeVisitante: match.resultado.golsVisitante.toString(),
+        observacoes: ''
       });
     } else {
       setResultForm({
@@ -646,7 +646,7 @@ const ChampionshipDetails: React.FC = () => {
                             <Box textAlign="center" mx={2}>
                               {partida.resultado ? (
                                 <Typography variant="h5" fontWeight="bold" color="primary.main">
-                                  {partida.resultado.golsTimeCasa} × {partida.resultado.golsTimeVisitante}
+                                  {partida.resultado.golsCasa} × {partida.resultado.golsVisitante}
                                 </Typography>
                               ) : (
                                 <Typography variant="h6" color="text.secondary">

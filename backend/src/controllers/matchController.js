@@ -160,18 +160,16 @@ const updateMatchResult = async (req, res) => {
         await prisma.resultado.update({
           where: { partidaId: match.id },
           data: {
-            golsTimeCasa: parseInt(golsTimeCasa),
-            golsTimeVisitante: parseInt(golsTimeVisitante),
-            observacoes: observacoes || null
+            golsCasa: parseInt(golsTimeCasa),
+            golsVisitante: parseInt(golsTimeVisitante)
           }
         });
       } else {
         await prisma.resultado.create({
           data: {
             partidaId: match.id,
-            golsTimeCasa: parseInt(golsTimeCasa),
-            golsTimeVisitante: parseInt(golsTimeVisitante),
-            observacoes: observacoes || null
+            golsCasa: parseInt(golsTimeCasa),
+            golsVisitante: parseInt(golsTimeVisitante)
           }
         });
       }

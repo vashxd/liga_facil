@@ -84,8 +84,8 @@ interface Championship {
       escudo?: string;
     };
     resultado?: {
-      golsTimeCasa: number;
-      golsTimeVisitante: number;
+      golsCasa: number;
+      golsVisitante: number;
     };
   }>;
   classificacoes: Array<{

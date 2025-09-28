@@ -13,6 +13,22 @@ const addPlayerValidation = [
   body('numero').isInt({ min: 1, max: 99 }).withMessage('Número deve ser entre 1 e 99')
 ];
 
+const updateTeamValidation = [
+  body('nome').optional().isLength({ min: 2, max: 50 }).withMessage('Nome deve ter entre 2 e 50 caracteres'),
+  body('escudo').optional().custom((value) => {
+    // Permite campo vazio ou URL válida
+    if (value === '' || value === null || value === undefined) {
+      return true;
+    }
+    // Se tem valor, deve ser uma URL válida
+    const urlPattern = /^https?:\/\/.+/;
+    if (!urlPattern.test(value)) {
+      throw new Error('Escudo deve ser uma URL válida');
+    }
+    return true;
+  })
+];
+
 // Criar time
 const createTeam = async (req, res) => {
   try {
@@ -202,6 +218,11 @@ const removePlayer = async (req, res) => {
 // Atualizar time
 const updateTeam = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { id } = req.params;
     const { nome, escudo } = req.body;
     const userId = req.user.id;
@@ -218,12 +239,18 @@ const updateTeam = async (req, res) => {
       return res.status(404).json({ error: 'Time não encontrado' });
     }
 
+    // Preparar dados para atualização
+    const updateData = {};
+    if (nome !== undefined && nome !== '') {
+      updateData.nome = nome;
+    }
+    if (escudo !== undefined) {
+      updateData.escudo = escudo || null; // Permite limpar o escudo
+    }
+
     const updatedTeam = await prisma.time.update({
       where: { id: parseInt(id) },
-      data: {
-        ...(nome && { nome }),
-        ...(escudo && { escudo })
-      },
+      data: updateData,
       include: {
         criador: {
           select: { id: true, nome: true, email: true }
@@ -252,5 +279,6 @@ module.exports = {
   removePlayer,
   updateTeam,
   createTeamValidation,
-  addPlayerValidation
+  addPlayerValidation,
+  updateTeamValidation
 };

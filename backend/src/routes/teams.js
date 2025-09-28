@@ -7,7 +7,8 @@ const {
   removePlayer,
   updateTeam,
   createTeamValidation,
-  addPlayerValidation
+  addPlayerValidation,
+  updateTeamValidation
 } = require('../controllers/teamController');
 const auth = require('../middleware/auth');
 
@@ -26,7 +27,7 @@ router.post('/', createTeamValidation, createTeam);
 router.get('/:id', getTeamById);
 
 // PUT /api/teams/:id - Atualizar time
-router.put('/:id', updateTeam);
+router.put('/:id', updateTeamValidation, updateTeam);
 
 // POST /api/teams/:id/players - Adicionar jogador ao time
 router.post('/:id/players', addPlayerValidation, addPlayer);

@@ -46,8 +46,8 @@ const EditTeam: React.FC = () => {
     try {
       const response = await teamService.getTeamById(Number(id));
       setFormData({
-        nome: response.time.nome,
-        escudo: response.time.escudo || '',
+        nome: response.team.nome,
+        escudo: response.team.escudo || '',
       });
     } catch (error: any) {
       setError('Erro ao carregar dados do time');

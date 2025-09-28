@@ -5,7 +5,8 @@ const {
   updateMatchStatus,
   updateMatchResult,
   updateMatchDateTime,
-  updateResultValidation
+  updateResultValidation,
+  processNextPhase
 } = require('../controllers/matchController');
 const auth = require('../middleware/auth');
 const { prisma } = require('../utils/prisma');
@@ -75,5 +76,8 @@ router.put('/:id/status', updateMatchStatus);
 
 // PUT /api/matches/:id/datetime - Atualizar data/hora da partida
 router.put('/:id/datetime', updateMatchDateTime);
+
+// POST /api/matches/championship/:championshipId/process-next-phase - Processar próxima fase manualmente
+router.post('/championship/:championshipId/process-next-phase', processNextPhase);
 
 module.exports = router;

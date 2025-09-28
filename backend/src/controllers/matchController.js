@@ -181,6 +181,14 @@ const updateMatchResult = async (req, res) => {
       });
 
       console.log('Resultado registrado com sucesso para partida:', id);
+
+      // Verificar se deve gerar próxima fase para formatos eliminatórios
+      try {
+        await checkAndGenerateNextPhase(match, parseInt(golsTimeCasa), parseInt(golsTimeVisitante));
+      } catch (error) {
+        console.error('Erro ao verificar próxima fase:', error);
+        // Não falhar a operação principal por causa disso
+      }
     } catch (dbError) {
       console.error('Erro na operação do banco:', dbError);
       return res.status(500).json({ error: 'Erro ao salvar no banco de dados: ' + dbError.message });
@@ -517,11 +525,237 @@ const getNextPhaseName = (currentPhase, winnersCount) => {
   return phaseMap[currentPhase];
 };
 
+// Função simplificada para verificar e gerar próxima fase do torneio
+const checkAndGenerateNextPhase = async (match, homeGoals, awayGoals) => {
+  const championship = match.campeonato;
+  const currentPhase = match.fase;
+
+  console.log('Verificando próxima fase para:', championship.formato, 'fase atual:', currentPhase);
+
+  // Formatos eliminatórios que precisam de geração de próximas fases
+  const eliminationFormats = [
+    'ELIMINACAO_SIMPLES',
+    'MATA_MATA',
+    'COPA',
+    'ELIMINACAO_DUPLA',
+    'SUICO_ELIMINATORIO'
+  ];
+
+  if (!eliminationFormats.includes(championship.formato)) {
+    console.log('Formato não é eliminatório, não precisa gerar próximas fases');
+    return; // Não é um formato que precisa de próximas fases
+  }
+
+  // Determinar vencedor
+  let winnerId;
+  if (homeGoals > awayGoals) {
+    winnerId = match.timeCasaId;
+  } else if (awayGoals > homeGoals) {
+    winnerId = match.timeVisitanteId;
+  } else {
+    // Empate - time da casa avança (critério simplificado)
+    winnerId = match.timeCasaId;
+  }
+
+  console.log('Vencedor da partida:', winnerId);
+
+  // Verificar se todas as partidas da fase atual foram finalizadas
+  const phaseMatches = await prisma.partida.findMany({
+    where: {
+      campeonatoId: match.campeonatoId,
+      fase: currentPhase
+    }
+  });
+
+  const finishedMatches = phaseMatches.filter(m => m.status === 'FINALIZADA');
+  const allPhaseMatchesFinished = finishedMatches.length === phaseMatches.length;
+
+  console.log(`Fase ${currentPhase}: ${finishedMatches.length}/${phaseMatches.length} partidas finalizadas`);
+
+  if (!allPhaseMatchesFinished) {
+    console.log('Ainda há partidas pendentes nesta fase');
+    return; // Ainda há partidas pendentes nesta fase
+  }
+
+  console.log('Todas as partidas da fase foram finalizadas, coletando vencedores...');
+
+  // Coletar todos os vencedores da fase atual
+  const winners = [];
+
+  for (const phaseMatch of phaseMatches) {
+    let phaseWinnerId;
+
+    if (phaseMatch.id === match.id) {
+      phaseWinnerId = winnerId;
+    } else {
+      const result = await prisma.resultado.findUnique({
+        where: { partidaId: phaseMatch.id }
+      });
+
+      if (result) {
+        if (result.golsCasa > result.golsVisitante) {
+          phaseWinnerId = phaseMatch.timeCasaId;
+        } else if (result.golsVisitante > result.golsCasa) {
+          phaseWinnerId = phaseMatch.timeVisitanteId;
+        } else {
+          // Empate - time da casa avança (critério simplificado)
+          phaseWinnerId = phaseMatch.timeCasaId;
+        }
+      }
+    }
+
+    if (phaseWinnerId) {
+      winners.push(phaseWinnerId);
+    }
+  }
+
+  console.log('Vencedores da fase:', winners);
+
+  // Se só sobrou 1 vencedor, o torneio terminou
+  if (winners.length === 1) {
+    console.log('Torneio finalizado! Campeão:', winners[0]);
+    await prisma.campeonato.update({
+      where: { id: match.campeonatoId },
+      data: {
+        status: 'FINALIZADO',
+        campeaoId: winners[0]
+      }
+    });
+    return;
+  }
+
+  // Gerar próxima fase
+  await generateNextPhase(championship, winners, currentPhase);
+};
+
+// Função para gerar partidas da próxima fase
+const generateNextPhase = async (championship, winners, currentPhase) => {
+  const nextPhase = getNextPhaseName(currentPhase, winners.length);
+
+  console.log('Gerando próxima fase:', nextPhase, 'com', winners.length, 'times');
+
+  if (!nextPhase) {
+    console.log('Não há próxima fase para gerar');
+    return; // Não há próxima fase
+  }
+
+  // Embaralhar vencedores para evitar confrontos previsíveis
+  const shuffledWinners = [...winners].sort(() => Math.random() - 0.5);
+
+  // Gerar partidas da próxima fase
+  const nextPhaseMatches = [];
+  for (let i = 0; i < shuffledWinners.length; i += 2) {
+    if (i + 1 < shuffledWinners.length) {
+      nextPhaseMatches.push({
+        campeonatoId: championship.id,
+        timeCasaId: shuffledWinners[i],
+        timeVisitanteId: shuffledWinners[i + 1],
+        fase: nextPhase,
+        dataHora: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 1 semana a partir de agora
+        local: 'A definir',
+        status: 'AGENDADA'
+      });
+    }
+  }
+
+  // Criar as partidas da próxima fase
+  if (nextPhaseMatches.length > 0) {
+    console.log('Criando', nextPhaseMatches.length, 'partidas para a próxima fase');
+    await prisma.partida.createMany({
+      data: nextPhaseMatches
+    });
+  }
+};
+
+// Função auxiliar para determinar o nome da próxima fase
+const getNextPhaseName = (currentPhase, winnersCount) => {
+  const phaseMap = {
+    'OITAVAS': 'QUARTAS',
+    'QUARTAS': 'SEMI',
+    'SEMIFINAL': 'FINAL',
+    'SEMI': 'FINAL',
+    'FINAL': null // Não há próxima fase após a final
+  };
+
+  // Se não está no mapa, determinar pela quantidade de times
+  if (!phaseMap[currentPhase]) {
+    if (winnersCount >= 16) return 'OITAVAS';
+    if (winnersCount >= 8) return 'QUARTAS';
+    if (winnersCount >= 4) return 'SEMI';
+    if (winnersCount >= 2) return 'FINAL';
+    return null;
+  }
+
+  return phaseMap[currentPhase];
+};
+
+// Função para processar manualmente a próxima fase de um campeonato
+const processNextPhase = async (req, res) => {
+  try {
+    const { championshipId } = req.params;
+    const userId = req.user.id;
+
+    console.log('Processando próxima fase manualmente para campeonato:', championshipId);
+
+    // Verificar se o usuário é organizador do campeonato
+    const championship = await prisma.campeonato.findFirst({
+      where: {
+        id: parseInt(championshipId),
+        organizadorId: userId
+      }
+    });
+
+    if (!championship) {
+      return res.status(403).json({ error: 'Você não tem permissão para processar este campeonato' });
+    }
+
+    // Buscar todas as partidas finalizadas do campeonato
+    const finishedMatches = await prisma.partida.findMany({
+      where: {
+        campeonatoId: parseInt(championshipId),
+        status: 'FINALIZADA'
+      },
+      include: {
+        campeonato: true,
+        resultado: true
+      },
+      orderBy: {
+        fase: 'desc' // Pegar a fase mais recente primeiro
+      }
+    });
+
+    if (finishedMatches.length === 0) {
+      return res.status(400).json({ error: 'Nenhuma partida finalizada encontrada' });
+    }
+
+    // Pegar a última partida finalizada para processar
+    const lastMatch = finishedMatches[0];
+    const result = lastMatch.resultado;
+
+    if (!result) {
+      return res.status(400).json({ error: 'Partida não possui resultado registrado' });
+    }
+
+    // Processar próxima fase baseado na última partida
+    await checkAndGenerateNextPhase(lastMatch, result.golsCasa, result.golsVisitante);
+
+    res.json({
+      message: 'Próxima fase processada com sucesso',
+      championship: championship.nome,
+      lastPhase: lastMatch.fase
+    });
+  } catch (error) {
+    console.error('Erro ao processar próxima fase:', error);
+    res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
+  }
+};
+
 module.exports = {
   getMatchesByChampionship,
   getMatchById,
   updateMatchStatus,
   updateMatchResult,
   updateMatchDateTime,
-  updateResultValidation
+  updateResultValidation,
+  processNextPhase
 };

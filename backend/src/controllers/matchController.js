@@ -192,10 +192,11 @@ const updateMatchResult = async (req, res) => {
 
       console.log('Resultado registrado com sucesso para partida:', id);
 
-      // Atualizar classificações se for pontos corridos
-      if (match.campeonato.formato === 'PONTOS_CORRIDOS') {
+      // Atualizar classificações se for pontos corridos ou grupos + eliminação (durante fase de grupos)
+      if (match.campeonato.formato === 'PONTOS_CORRIDOS' ||
+          (match.campeonato.formato === 'GRUPOS_ELIMINACAO' && match.fase.startsWith('GRUPO'))) {
         try {
-          await updateStandings(match.campeonatoId, match.timeCasaId, match.timeVisitanteId, parseInt(golsTimeCasa), parseInt(golsTimeVisitante));
+          await updateStandings(match.campeonatoId, match.timeCasaId, match.timeVisitanteId, parseInt(golsTimeCasa), parseInt(golsTimeVisitante), match.fase);
         } catch (error) {
           console.error('Erro ao atualizar classificações:', error);
         }
@@ -246,8 +247,14 @@ const updateMatchResult = async (req, res) => {
 };
 
 // Função simplificada para atualizar classificações (sem transação)
-const updateStandings = async (championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals) => {
-  console.log('Atualizando classificações:', { championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals });
+const updateStandings = async (championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals, phase = null) => {
+  console.log('Atualizando classificações:', { championshipId, homeTeamId, awayTeamId, homeGoals, awayGoals, phase });
+
+  // Detectar grupo da fase (se for formato de grupos)
+  let grupo = null;
+  if (phase && phase.startsWith('GRUPO_')) {
+    grupo = phase; // "GRUPO_A", "GRUPO_B", etc.
+  }
 
   // Determinar resultado
   let homePoints = 0;
@@ -301,7 +308,8 @@ const updateStandings = async (championshipId, homeTeamId, awayTeamId, homeGoals
       golsContra: awayGoals,
       jogos: 1,
       saldoGols: homeGoals - awayGoals,
-      posicao: 1
+      posicao: 1,
+      grupo: grupo
     }
   });
 
@@ -334,7 +342,8 @@ const updateStandings = async (championshipId, homeTeamId, awayTeamId, homeGoals
       golsContra: homeGoals,
       jogos: 1,
       saldoGols: awayGoals - homeGoals,
-      posicao: 1
+      posicao: 1,
+      grupo: grupo
     }
   });
 
@@ -430,7 +439,8 @@ const checkAndGenerateNextPhase = async (match, homeGoals, awayGoals) => {
     'MATA_MATA',
     'COPA',
     'ELIMINACAO_DUPLA',
-    'SUICO_ELIMINATORIO'
+    'SUICO_ELIMINATORIO',
+    'GRUPOS_ELIMINACAO'
   ];
 
   if (!eliminationFormats.includes(championship.formato)) {
@@ -470,6 +480,31 @@ const checkAndGenerateNextPhase = async (match, homeGoals, awayGoals) => {
   }
 
   console.log('Todas as partidas da fase foram finalizadas, coletando vencedores...');
+
+  // Tratamento especial para formato GRUPOS_ELIMINACAO
+  if (championship.formato === 'GRUPOS_ELIMINACAO' && currentPhase.startsWith('GRUPO')) {
+    console.log('Verificando se todas as fases de grupos terminaram...');
+
+    // Verificar se TODAS as partidas de TODOS os grupos terminaram
+    const allGroupMatches = await prisma.partida.findMany({
+      where: {
+        campeonatoId: match.campeonatoId,
+        fase: { startsWith: 'GRUPO' }
+      }
+    });
+
+    const allGroupFinishedMatches = allGroupMatches.filter(m => m.status === 'FINALIZADA');
+
+    console.log(`Grupos: ${allGroupFinishedMatches.length}/${allGroupMatches.length} partidas finalizadas`);
+
+    if (allGroupFinishedMatches.length === allGroupMatches.length) {
+      console.log('Todas as partidas de grupos terminaram! Classificando times para eliminatórias...');
+      await processGroupsToEliminationPhase(match.campeonatoId);
+    } else {
+      console.log('Ainda há partidas de outros grupos pendentes');
+    }
+    return;
+  }
 
   // Coletar todos os vencedores da fase atual
   const winners = [];
@@ -639,6 +674,120 @@ const processNextPhase = async (req, res) => {
   } catch (error) {
     console.error('Erro ao processar próxima fase:', error);
     res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
+  }
+};
+
+// Função para processar transição de grupos para eliminatórias
+const processGroupsToEliminationPhase = async (championshipId) => {
+  console.log('Processando transição de grupos para eliminatórias:', championshipId);
+
+  try {
+    // Verificar se todas as partidas dos grupos terminaram
+    const groupMatches = await prisma.partida.findMany({
+      where: {
+        campeonatoId: championshipId,
+        fase: { startsWith: 'GRUPO' }
+      }
+    });
+
+    const finishedGroupMatches = groupMatches.filter(m => m.status === 'FINALIZADA');
+
+    if (finishedGroupMatches.length !== groupMatches.length) {
+      console.log('Nem todas as partidas dos grupos terminaram ainda');
+      return;
+    }
+
+    console.log('Todas as partidas dos grupos terminaram, classificando times...');
+
+    // Buscar classificações dos grupos
+    const standings = await prisma.classificacao.findMany({
+      where: { campeonatoId: championshipId },
+      include: { time: true },
+      orderBy: [
+        { grupo: 'asc' },
+        { pontos: 'desc' },
+        { saldoGols: 'desc' },
+        { golsFeitos: 'desc' }
+      ]
+    });
+
+    if (standings.length === 0) {
+      console.log('Nenhuma classificação encontrada para os grupos');
+      return;
+    }
+
+    // Agrupar por grupo e pegar os 2 primeiros de cada grupo
+    const groupedStandings = {};
+    standings.forEach(standing => {
+      if (!groupedStandings[standing.grupo]) {
+        groupedStandings[standing.grupo] = [];
+      }
+      groupedStandings[standing.grupo].push(standing);
+    });
+
+    const qualifiedTeams = [];
+    Object.keys(groupedStandings).forEach(group => {
+      const groupTeams = groupedStandings[group].slice(0, 2); // Pegar os 2 primeiros
+      qualifiedTeams.push(...groupTeams.map(standing => standing.timeId));
+    });
+
+    console.log('Times classificados para eliminatórias:', qualifiedTeams);
+
+    if (qualifiedTeams.length < 2) {
+      console.log('Não há times suficientes classificados para eliminatórias');
+      return;
+    }
+
+    // Gerar partidas das oitavas de final (ou fase apropriada)
+    await generateEliminationMatches(championshipId, qualifiedTeams);
+
+  } catch (error) {
+    console.error('Erro ao processar transição para eliminatórias:', error);
+  }
+};
+
+// Função para gerar partidas da fase eliminatória
+const generateEliminationMatches = async (championshipId, qualifiedTeams) => {
+  console.log('Gerando partidas eliminatórias para', qualifiedTeams.length, 'times');
+
+  // Embaralhar times para evitar confrontos previsíveis
+  const shuffledTeams = [...qualifiedTeams].sort(() => Math.random() - 0.5);
+
+  // Determinar qual fase gerar baseado no número de times
+  let phaseName;
+  if (shuffledTeams.length >= 16) phaseName = 'OITAVAS';
+  else if (shuffledTeams.length >= 8) phaseName = 'QUARTAS';
+  else if (shuffledTeams.length >= 4) phaseName = 'SEMI';
+  else if (shuffledTeams.length >= 2) phaseName = 'FINAL';
+  else {
+    console.log('Não há times suficientes para gerar fase eliminatória');
+    return;
+  }
+
+  console.log('Gerando fase:', phaseName);
+
+  // Gerar partidas
+  const eliminationMatches = [];
+  for (let i = 0; i < shuffledTeams.length; i += 2) {
+    if (i + 1 < shuffledTeams.length) {
+      eliminationMatches.push({
+        campeonatoId: championshipId,
+        timeCasaId: shuffledTeams[i],
+        timeVisitanteId: shuffledTeams[i + 1],
+        fase: phaseName,
+        dataHora: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)), // 1 semana a partir de agora
+        local: 'A definir',
+        status: 'AGENDADA'
+      });
+    }
+  }
+
+  if (eliminationMatches.length > 0) {
+    console.log('Criando', eliminationMatches.length, 'partidas da fase', phaseName);
+    await prisma.partida.createMany({
+      data: eliminationMatches
+    });
+    console.log('Partidas eliminatórias criadas com sucesso!');
   }
 };
 

@@ -134,6 +134,8 @@ const updateMatchResult = async (req, res) => {
     const { golsTimeCasa, golsTimeVisitante, observacoes } = req.body;
     const userId = req.user.id;
 
+    console.log('Registrando resultado para partida:', id, 'dados:', { golsTimeCasa, golsTimeVisitante, observacoes });
+
     // Verificar se a partida existe e se o usuário é o organizador do campeonato
     const match = await prisma.partida.findUnique({
       where: { id: parseInt(id) },
@@ -151,53 +153,40 @@ const updateMatchResult = async (req, res) => {
       return res.status(403).json({ error: 'Apenas o organizador do campeonato pode registrar resultados' });
     }
 
-    await prisma.$transaction(async (tx) => {
+    // Versão simplificada sem transação complexa
+    try {
       // Criar ou atualizar resultado
       if (match.resultado) {
-        await tx.resultado.update({
+        await prisma.resultado.update({
           where: { partidaId: match.id },
           data: {
             golsTimeCasa: parseInt(golsTimeCasa),
             golsTimeVisitante: parseInt(golsTimeVisitante),
-            observacoes
+            observacoes: observacoes || null
           }
         });
       } else {
-        await tx.resultado.create({
+        await prisma.resultado.create({
           data: {
             partidaId: match.id,
             golsTimeCasa: parseInt(golsTimeCasa),
             golsTimeVisitante: parseInt(golsTimeVisitante),
-            observacoes
+            observacoes: observacoes || null
           }
         });
       }
 
       // Atualizar status da partida para finalizada
-      await tx.partida.update({
+      await prisma.partida.update({
         where: { id: match.id },
         data: { status: 'FINALIZADA' }
       });
 
-      // Atualizar classificações se for pontos corridos
-      if (match.campeonato.formato === 'PONTOS_CORRIDOS') {
-        try {
-          await updateStandings(tx, match.campeonatoId, match.timeCasaId, match.timeVisitanteId, golsTimeCasa, golsTimeVisitante);
-        } catch (error) {
-          console.error('Erro ao atualizar classificações:', error);
-        }
-      }
-
-      // Verificar se deve gerar próxima fase para formatos eliminatórios
-      try {
-        if (typeof checkAndGenerateNextPhase === 'function') {
-          await checkAndGenerateNextPhase(tx, match, golsTimeCasa, golsTimeVisitante);
-        }
-      } catch (error) {
-        console.error('Erro ao verificar próxima fase:', error);
-        // Não falhar a transação por causa disso
-      }
-    });
+      console.log('Resultado registrado com sucesso para partida:', id);
+    } catch (dbError) {
+      console.error('Erro na operação do banco:', dbError);
+      return res.status(500).json({ error: 'Erro ao salvar no banco de dados: ' + dbError.message });
+    }
 
     // Buscar partida atualizada
     const updatedMatch = await prisma.partida.findUnique({
@@ -218,8 +207,8 @@ const updateMatchResult = async (req, res) => {
       match: updatedMatch
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    console.error('Erro geral:', error);
+    res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
   }
 };
 

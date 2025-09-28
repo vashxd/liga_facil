@@ -271,6 +271,11 @@ const enrollTeam = async (req, res) => {
       return res.status(404).json({ error: 'Campeonato não encontrado' });
     }
 
+    // Verificar se o campeonato está finalizado
+    if (championship.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível inscrever times em campeonatos finalizados' });
+    }
+
     // Verificar se o time pertence ao usuário
     const team = await prisma.time.findFirst({
       where: {
@@ -338,6 +343,11 @@ const updateChampionship = async (req, res) => {
       return res.status(404).json({ error: 'Campeonato não encontrado' });
     }
 
+    // Verificar se o campeonato está finalizado
+    if (existingChampionship.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível alterar campeonatos finalizados' });
+    }
+
     const updatedChampionship = await prisma.campeonato.update({
       where: { id: parseInt(id) },
       data: {
@@ -400,6 +410,11 @@ const generateMatches = async (req, res) => {
 
     if (!championship) {
       return res.status(404).json({ error: 'Campeonato não encontrado' });
+    }
+
+    // Verificar se o campeonato está finalizado
+    if (championship.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível gerar partidas em campeonatos finalizados' });
     }
 
     if (championship.partidas.length > 0) {
@@ -735,6 +750,11 @@ const removeTeamFromChampionship = async (req, res) => {
 
     if (!championship) {
       return res.status(404).json({ error: 'Campeonato não encontrado' });
+    }
+
+    // Verificar se o campeonato está finalizado
+    if (championship.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível remover times de campeonatos finalizados' });
     }
 
     // Verificar se já foram geradas partidas

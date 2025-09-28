@@ -69,6 +69,7 @@ export interface Championship {
   formato: string;
   dataInicio: string;
   privado: boolean;
+  status?: string;
   organizador: User;
   inscricoes?: any[];
   partidas?: any[];

@@ -98,6 +98,11 @@ const updateMatchStatus = async (req, res) => {
       return res.status(403).json({ error: 'Apenas o organizador do campeonato pode alterar o status das partidas' });
     }
 
+    // Verificar se o campeonato está finalizado
+    if (match.campeonato.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível alterar partidas de campeonatos finalizados' });
+    }
+
     const updatedMatch = await prisma.partida.update({
       where: { id: parseInt(id) },
       data: { status },
@@ -153,6 +158,11 @@ const updateMatchResult = async (req, res) => {
       return res.status(403).json({ error: 'Apenas o organizador do campeonato pode registrar resultados' });
     }
 
+    // Verificar se o campeonato está finalizado
+    if (match.campeonato.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível alterar resultados de campeonatos finalizados' });
+    }
+
     // Versão simplificada sem transação complexa
     try {
       // Criar ou atualizar resultado
@@ -196,6 +206,14 @@ const updateMatchResult = async (req, res) => {
         await checkAndGenerateNextPhase(match, parseInt(golsTimeCasa), parseInt(golsTimeVisitante));
       } catch (error) {
         console.error('Erro ao verificar próxima fase:', error);
+        // Não falhar a operação principal por causa disso
+      }
+
+      // Verificar se todas as partidas do campeonato terminaram e finalizar se necessário
+      try {
+        await checkAndFinishChampionship(match.campeonatoId);
+      } catch (error) {
+        console.error('Erro ao verificar finalização do campeonato:', error);
         // Não falhar a operação principal por causa disso
       }
     } catch (dbError) {
@@ -367,6 +385,11 @@ const updateMatchDateTime = async (req, res) => {
 
     if (match.campeonato.organizadorId !== userId) {
       return res.status(403).json({ error: 'Apenas o organizador do campeonato pode alterar datas das partidas' });
+    }
+
+    // Verificar se o campeonato está finalizado
+    if (match.campeonato.status === 'FINALIZADO') {
+      return res.status(400).json({ error: 'Não é possível alterar datas de partidas em campeonatos finalizados' });
     }
 
     const updatedMatch = await prisma.partida.update({
@@ -616,6 +639,57 @@ const processNextPhase = async (req, res) => {
   } catch (error) {
     console.error('Erro ao processar próxima fase:', error);
     res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
+  }
+};
+
+// Função para verificar se todas as partidas do campeonato terminaram e finalizar
+const checkAndFinishChampionship = async (championshipId) => {
+  console.log('Verificando se campeonato deve ser finalizado:', championshipId);
+
+  // Buscar o campeonato
+  const championship = await prisma.campeonato.findUnique({
+    where: { id: championshipId }
+  });
+
+  if (!championship) {
+    console.log('Campeonato não encontrado');
+    return;
+  }
+
+  // Se já está finalizado, não fazer nada
+  if (championship.status === 'FINALIZADO') {
+    console.log('Campeonato já está finalizado');
+    return;
+  }
+
+  // Buscar todas as partidas do campeonato
+  const allMatches = await prisma.partida.findMany({
+    where: { campeonatoId: championshipId }
+  });
+
+  if (allMatches.length === 0) {
+    console.log('Nenhuma partida encontrada para o campeonato');
+    return;
+  }
+
+  // Verificar se todas as partidas estão finalizadas
+  const finishedMatches = allMatches.filter(match => match.status === 'FINALIZADA');
+  const allMatchesFinished = finishedMatches.length === allMatches.length;
+
+  console.log(`Campeonato ${championshipId}: ${finishedMatches.length}/${allMatches.length} partidas finalizadas`);
+
+  if (allMatchesFinished) {
+    console.log('Todas as partidas finalizadas! Marcando campeonato como FINALIZADO');
+
+    // Atualizar status do campeonato para FINALIZADO
+    await prisma.campeonato.update({
+      where: { id: championshipId },
+      data: { status: 'FINALIZADO' }
+    });
+
+    console.log('Campeonato finalizado automaticamente:', championshipId);
+  } else {
+    console.log('Ainda há partidas pendentes, campeonato continua ativo');
   }
 };
 
